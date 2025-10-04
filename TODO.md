@@ -49,12 +49,17 @@
   - [ ] Real-time progress tracking with WebSocket
   - [ ] Analysis results visualization
   - [ ] Cost savings dashboard and analytics
+  - [ ] **Company readiness dashboard** - Show readiness scores for target companies
+  - [ ] **Company comparison view** - Side-by-side readiness across multiple companies
 
 - [ ] **Practice Session Interface**
   - [ ] Scenario selection and filtering
+  - [ ] **Company-specific scenario filtering** - Filter by target company (Meta, Google, etc.)
   - [ ] Real-time practice session with coaching hints
+  - [ ] **Company rubric-based scoring** - Live feedback against company standards
   - [ ] Response submission and feedback display
   - [ ] Session completion and results tracking
+  - [ ] **Company readiness impact tracking** - Show how practice affects company scores
 
 - [ ] **Real-time Features**
   - [ ] WebSocket client integration
@@ -72,8 +77,30 @@
 - [ ] **Advanced UI Components**
   - [ ] Audio player with transcript synchronization
   - [ ] Interactive data visualizations
+  - [ ] **Company rubric visualization components** - Radar charts, progress rings, score breakdowns
+  - [ ] **Company profile pages** - Detailed company standards and requirements
   - [ ] Drag-and-drop file upload interface
   - [ ] Advanced filtering and search components
+  - [ ] **Readiness timeline visualization** - Show estimated path to company readiness
+
+#### Company Rubric Integration Frontend (Epic 6 Preparation)
+- [ ] **Company Discovery & Selection**
+  - [ ] Company browse/search interface with filtering by domain (AI, Fintech, etc.)
+  - [ ] Company detail pages with rubric summaries and culture info
+  - [ ] "Target company" selection and goal-setting interface
+  - [ ] Multiple company tracking (users can target 3-5 companies simultaneously)
+
+- [ ] **Readiness Dashboard & Analytics**
+  - [ ] Personal readiness score dashboard with company-specific breakdowns
+  - [ ] Skill gap analysis visualization (what skills need improvement per company)
+  - [ ] Timeline to readiness estimation with milestone tracking
+  - [ ] Recommended practice plan based on company requirements
+
+- [ ] **Community Validation Interface**
+  - [ ] Employee verification flow (LinkedIn integration)
+  - [ ] Rubric accuracy feedback and voting system
+  - [ ] Community-contributed insights and tips per company
+  - [ ] Flagging system for outdated or inaccurate information
 
 ### Epic 4: Advanced Features & Analytics
 **Target:** Version 2.2.0 - Q1 2026
@@ -185,6 +212,47 @@
   - [ ] Support for 50+ companies with sub-100ms APIs
   - [ ] 99.9% uptime SLA with global CDN
   - [ ] Advanced caching and performance optimization
+
+---
+
+## ❓ CRITICAL FRONTEND OPEN QUESTIONS
+
+### Epic 3 Frontend Decisions Needed
+- [ ] **Framework Architecture Decision**
+  - Should we use Next.js App Router or Pages Router for the company rubric features?
+  - How do we handle client-side state for complex company comparisons and filtering?
+  - Do we need a global state management solution (Zustand, Redux, or React Context)?
+
+- [ ] **Company Data Strategy**
+  - How do we handle real-time updates for company readiness scores (WebSocket vs polling)?
+  - Should company rubric data be cached client-side or server-side rendered?
+  - How do we optimize for mobile when displaying complex company comparison charts?
+
+- [ ] **User Experience Flows**
+  - Should users select target companies during onboarding or after first practice session?
+  - How many companies should users be able to track simultaneously (3, 5, unlimited)?
+  - Should company readiness be the primary dashboard or secondary to practice sessions?
+
+- [ ] **Data Visualization Requirements**
+  - Which charting library for company readiness visualizations (D3, Chart.js, Recharts)?
+  - How detailed should skill gap breakdowns be (high-level vs granular criteria)?
+  - Should we show confidence scores for rubric accuracy to users or keep internal?
+
+- [ ] **Integration Timeline**
+  - Should company rubric UI be built in Epic 3 as placeholders or wait for Epic 6 backend?
+  - How do we phase the rollout (company profiles first, then readiness scoring)?
+  - Should community validation features be built with the initial company system?
+
+### Design System Questions
+- [ ] **Component Architecture**
+  - How do we design reusable components for company-specific content?
+  - Should company branding (colors, logos) be integrated into the UI?
+  - How do we handle accessibility for complex data visualizations?
+
+- [ ] **Mobile Considerations**
+  - How do company comparison features work on mobile devices?
+  - Should mobile focus on single-company view rather than multi-company comparisons?
+  - What's the mobile priority order for company features?
 
 ---
 

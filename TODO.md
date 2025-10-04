@@ -215,44 +215,55 @@
 
 ---
 
-## ❓ CRITICAL FRONTEND OPEN QUESTIONS
+## ✅ FRONTEND ARCHITECTURE DECISIONS
 
-### Epic 3 Frontend Decisions Needed
-- [ ] **Framework Architecture Decision**
-  - Should we use Next.js App Router or Pages Router for the company rubric features?
-  - How do we handle client-side state for complex company comparisons and filtering?
-  - Do we need a global state management solution (Zustand, Redux, or React Context)?
+### Epic 3 Framework & Technical Decisions
+- [x] **Framework Architecture: Next.js App Router** ✅ DECIDED
+  - Using App Router for better server components and streaming
+  - Zustand + React Query for state management (client + server state)
+  - No Redux needed - React Context only for auth/theme providers
 
-- [ ] **Company Data Strategy**
-  - How do we handle real-time updates for company readiness scores (WebSocket vs polling)?
-  - Should company rubric data be cached client-side or server-side rendered?
-  - How do we optimize for mobile when displaying complex company comparison charts?
+- [x] **Company Data Strategy: Hybrid Approach** ✅ DECIDED
+  - WebSocket for real-time updates (practice sessions, analysis progress)
+  - React Query with 5-minute cache for company readiness scores
+  - Server-side rendering for company profile pages
+  - Progressive enhancement for mobile optimization
 
-- [ ] **User Experience Flows**
-  - Should users select target companies during onboarding or after first practice session?
-  - How many companies should users be able to track simultaneously (3, 5, unlimited)?
-  - Should company readiness be the primary dashboard or secondary to practice sessions?
+- [x] **User Experience Flows: Growth-Focused Progression** ✅ DECIDED
+  - Required target company selection during onboarding (1-3 companies)
+  - Focus on role progression: PO → PM → Sr PM → Staff PM
+  - Company tracking limit: 3 targets + current baseline, expandable to 5
+  - Dashboard priority: 60% growth trajectory, 25% practice, 15% achievements
 
-- [ ] **Data Visualization Requirements**
-  - Which charting library for company readiness visualizations (D3, Chart.js, Recharts)?
-  - How detailed should skill gap breakdowns be (high-level vs granular criteria)?
-  - Should we show confidence scores for rubric accuracy to users or keep internal?
+- [x] **Data Visualization: Recharts Primary** ✅ DECIDED
+  - Recharts for most visualizations (responsive, React-optimized)
+  - D3.js only for complex network visualizations if needed
+  - High-level skill gaps with drill-down capability
+  - Show confidence scores with explanations (builds trust)
 
-- [ ] **Integration Timeline**
-  - Should company rubric UI be built in Epic 3 as placeholders or wait for Epic 6 backend?
-  - How do we phase the rollout (company profiles first, then readiness scoring)?
-  - Should community validation features be built with the initial company system?
+- [x] **Integration Timeline: Progressive Enhancement** ✅ DECIDED
+  - Epic 3: Build UI components with mock data
+  - Epic 6 Phase 1: Connect to real backend
+  - Epic 6 Phase 2: Add community validation features
+  - Epic 6 Phase 3: Enterprise and advanced features
 
-### Design System Questions
-- [ ] **Component Architecture**
-  - How do we design reusable components for company-specific content?
-  - Should company branding (colors, logos) be integrated into the UI?
-  - How do we handle accessibility for complex data visualizations?
+### Design System: Anthropic-Inspired
+- [x] **Component Architecture: Sophisticated & Accessible** ✅ DECIDED
+  - Extend shadcn/ui with custom company-specific components
+  - Subtle company branding (accent colors, border highlights only)
+  - WCAG 2.1 AA compliance minimum
+  - Muted color palette with thoughtful density
 
-- [ ] **Mobile Considerations**
-  - How do company comparison features work on mobile devices?
-  - Should mobile focus on single-company view rather than multi-company comparisons?
-  - What's the mobile priority order for company features?
+- [x] **Mobile Strategy: Single Company Focus** ✅ DECIDED
+  - Mobile-first with progressive enhancement
+  - Single company view on mobile with swipe between targets
+  - Maximum 2-company comparison on tablet, stacked on phone
+  - Priority: Current readiness → Next practice → Timeline → Detailed gaps
+
+### Documentation Created
+- [x] **Frontend Architecture Specification** → `/docs/technical/frontend-architecture.md`
+- [x] **Anthropic-Inspired Design System** → `/docs/technical/design-system.md`
+- [x] **Growth Journey & Role Progression** → `/docs/product/growth-journey.md`
 
 ---
 

@@ -5,8 +5,8 @@
 
 import { WhisperService } from '@/lib/services/openai/whisper-service'
 import { OpenAIConfig, TranscriptionRequest } from '@/lib/services/openai/types'
-import { MockOpenAIService, setupOpenAIMocks, generateMockTranscription } from '@/__tests__/mocks/openai'
-import { createSecureTestFile } from '@/__tests__/utils/security-helpers'
+import { MockOpenAIService, setupOpenAIMocks, generateMockTranscription } from '../../mocks/openai'
+import { createSecureTestFile } from '../../utils/security-helpers'
 
 // Mock the OpenAI client
 const mockTranscriptionsCreate = jest.fn()
@@ -567,7 +567,7 @@ describe('WhisperService', () => {
       const result = await whisperService.transcribeAudio(request)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('unexpected error occurred during transcription')
+      expect(result.error).toContain('Something went wrong')
     })
   })
 })

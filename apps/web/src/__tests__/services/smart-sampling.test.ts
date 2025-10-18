@@ -5,7 +5,7 @@
 
 import { SmartSamplingService } from '../../services/smart-sampling.service'
 import { generateMockTranscription, createMockOpenAI } from '../mocks/openai'
-import { measurePerformance, detectMemoryLeak } from '../utils/performance-helpers'
+import { measurePerformance, detectMemoryLeak } from '@/utils/performance-helpers'
 
 describe('SmartSamplingService', () => {
   let smartSamplingService: SmartSamplingService

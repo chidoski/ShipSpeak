@@ -3,6 +3,8 @@
  * Comprehensive mocking for Supabase database and auth integration testing
  */
 
+import { jest } from '@jest/globals'
+
 // =============================================================================
 // MOCK DATA TYPES
 // =============================================================================
@@ -685,3 +687,129 @@ export const SUPABASE_TEST_SCENARIOS = {
 } as const
 
 export default MockSupabaseClient
+
+// =============================================================================
+// TEST CASES FOR SUPABASE MOCKS
+// =============================================================================
+
+describe('Supabase Mock Service', () => {
+  let mockSupabase: MockSupabaseClient
+  let database: MockSupabaseDatabase
+
+  beforeEach(() => {
+    mockSupabase = new MockSupabaseClient()
+    database = mockSupabase.getDatabase()
+  })
+
+  describe('Authentication', () => {
+    it('should handle user sign up', async () => {
+      const result = await mockSupabase.auth.signUp({
+        email: 'newuser@example.com',
+        password: 'password123'
+      })
+
+      expect(result.data.user).toBeDefined()
+      expect(result.data.user.email).toBe('newuser@example.com')
+      expect(result.error).toBeNull()
+    })
+
+    it('should handle user sign in', async () => {
+      const result = await mockSupabase.auth.signIn({
+        email: 'test@example.com',
+        password: 'password123'
+      })
+
+      expect(result.data.user).toBeDefined()
+      expect(result.error).toBeNull()
+    })
+
+    it('should handle sign out', async () => {
+      await mockSupabase.auth.signIn({ email: 'test@example.com', password: 'pass' })
+      const result = await mockSupabase.auth.signOut()
+      
+      expect(result.error).toBeNull()
+      expect(mockSupabase.getCurrentUser()).toBeNull()
+    })
+  })
+
+  describe('Database Operations', () => {
+    it('should create and retrieve users', () => {
+      const userData = {
+        email: 'testuser@example.com',
+        name: 'Test User',
+        role: 'individual' as const
+      }
+
+      const user = database.createUser(userData)
+      expect(user.id).toBeDefined()
+      expect(user.email).toBe(userData.email)
+
+      const retrieved = database.getUser(user.id)
+      expect(retrieved).toEqual(user)
+    })
+
+    it('should handle meeting operations', () => {
+      const meetingData = {
+        user_id: 'user-123',
+        title: 'Test Meeting',
+        duration: 3600,
+        platform: 'google_meet' as const
+      }
+
+      const meeting = database.createMeeting(meetingData)
+      expect(meeting.id).toBeDefined()
+      expect(meeting.title).toBe(meetingData.title)
+
+      const userMeetings = database.getUserMeetings('user-123')
+      expect(userMeetings).toContain(meeting)
+    })
+
+    it('should handle practice module operations', () => {
+      const moduleData = {
+        user_id: 'user-123',
+        title: 'Test Module',
+        type: 'FILLER_WORD_REDUCTION' as const,
+        difficulty: 'BEGINNER' as const
+      }
+
+      const module = database.createPracticeModule(moduleData)
+      expect(module.id).toBeDefined()
+      expect(module.type).toBe(moduleData.type)
+
+      const userModules = database.getUserPracticeModules('user-123')
+      expect(userModules).toContain(module)
+    })
+  })
+
+  describe('Storage Operations', () => {
+    it('should handle file uploads', async () => {
+      const mockFile = new File(['test content'], 'test.mp3', { type: 'audio/mpeg' })
+      const result = await mockSupabase.storage.from('audio').upload('test.mp3', mockFile)
+
+      expect(result.data.path).toBeDefined()
+      expect(result.error).toBeNull()
+    })
+
+    it('should handle file downloads', async () => {
+      const result = await mockSupabase.storage.from('audio').download('test.mp3')
+      expect(result.data).toBeInstanceOf(Blob)
+      expect(result.error).toBeNull()
+    })
+  })
+
+  describe('Real-time Subscriptions', () => {
+    it('should handle channel subscriptions', () => {
+      const channel = mockSupabase.channel('test-channel')
+      const callback = jest.fn()
+
+      channel.on('INSERT', {}, callback)
+      const subscription = channel.subscribe()
+
+      expect(subscription.unsubscribe).toBeDefined()
+      // Callback should be called after timeout
+      setTimeout(() => {
+        expect(callback).toHaveBeenCalled()
+      }, 150)
+    })
+  })
+})

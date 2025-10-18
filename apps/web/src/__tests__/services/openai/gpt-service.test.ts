@@ -66,8 +66,31 @@ describe('GPTService', () => {
 
   describe('analyzeMeeting', () => {
     it('should successfully analyze a meeting with detailed analysis', async () => {
-      // Mock OpenAI response
-      const mockAnalysis = TEST_SCENARIOS.AVERAGE_PERFORMANCE.analysis
+      // Mock OpenAI response with proper analysis structure
+      const mockAnalysis = {
+        fillerWordsPerMinute: 3.5,
+        confidenceScore: 75,
+        speakingPace: 70,
+        structureScore: 80,
+        executivePresenceScore: 72,
+        communicationPatterns: {
+          fillerWords: [{word: 'um', count: 2, timestamps: [10, 25]}],
+          sentenceStructure: 'mixed',
+          tonality: 'neutral',
+          clarityScore: 75
+        },
+        strategicThinking: {
+          frameworkUsage: ['SWOT'],
+          stakeholderAwareness: 70,
+          businessImpactClarity: 75,
+          recommendationStrength: 80
+        },
+        recommendations: ['Practice pause techniques'],
+        keyInsights: ['Good strategic thinking'],
+        improvementAreas: [],
+        strengthAreas: ['Clear communication']
+      }
+      
       mockCompletionsCreate.mockResolvedValueOnce({
         id: 'test-completion',
         object: 'chat.completion',
@@ -89,7 +112,7 @@ describe('GPTService', () => {
       })
 
       const request: MeetingAnalysisRequest = {
-        transcription: 'This is a test meeting transcript with some filler words like um and uh.',
+        transcription: 'This is a test meeting transcript with some filler words like um and uh. We discussed the product roadmap and user feedback. The engagement metrics show promising results. We need to prioritize the mobile experience improvements based on user research findings.',
         meetingContext: {
           duration: 1800,
           meetingType: 'review'
@@ -99,7 +122,7 @@ describe('GPTService', () => {
       }
 
       const result = await gptService.analyzeMeeting(request)
-
+      
       expect(result.success).toBe(true)
       expect(result.data).toBeDefined()
       expect(result.data?.fillerWordsPerMinute).toBeGreaterThanOrEqual(0)
@@ -164,7 +187,7 @@ describe('GPTService', () => {
       })
 
       const request: MeetingAnalysisRequest = {
-        transcription: 'Valid meeting transcript for testing fallback behavior.',
+        transcription: 'Valid meeting transcript for testing fallback behavior. This transcript needs to be long enough to pass validation which requires at least 100 characters. We discussed strategic initiatives and market opportunities.',
         userRole: 'pm'
       }
 
@@ -176,7 +199,30 @@ describe('GPTService', () => {
     })
 
     it('should use quick analysis model for basic depth', async () => {
-      const mockAnalysis = TEST_SCENARIOS.PERFECT_MEETING.analysis
+      const mockAnalysis = {
+        fillerWordsPerMinute: 1.5,
+        confidenceScore: 90,
+        speakingPace: 85,
+        structureScore: 88,
+        executivePresenceScore: 92,
+        communicationPatterns: {
+          fillerWords: [],
+          sentenceStructure: 'answer_first',
+          tonality: 'confident',
+          clarityScore: 90
+        },
+        strategicThinking: {
+          frameworkUsage: ['STAR', 'SWOT'],
+          stakeholderAwareness: 85,
+          businessImpactClarity: 90,
+          recommendationStrength: 88
+        },
+        recommendations: ['Maintain current communication style'],
+        keyInsights: ['Excellent executive presence'],
+        improvementAreas: [],
+        strengthAreas: ['Clear structure', 'Confident delivery']
+      }
+      
       mockCompletionsCreate.mockResolvedValueOnce({
         id: 'test-completion',
         object: 'chat.completion',
@@ -194,7 +240,7 @@ describe('GPTService', () => {
       })
 
       const request: MeetingAnalysisRequest = {
-        transcription: 'Test meeting transcript for basic analysis.',
+        transcription: 'Test meeting transcript for basic analysis. This transcript needs to meet the minimum length requirement of 100 characters for validation. We covered product strategy and team alignment.',
         analysisDepth: 'basic',
         userRole: 'pm'
       }
@@ -259,8 +305,32 @@ describe('GPTService', () => {
         usage: { prompt_tokens: 600, completion_tokens: 400, total_tokens: 1000 }
       })
 
+      const mockAnalysis = {
+        fillerWordsPerMinute: 6,
+        confidenceScore: 60,
+        speakingPace: 70,
+        structureScore: 65,
+        executivePresenceScore: 58,
+        communicationPatterns: {
+          fillerWords: [{word: 'um', count: 8, timestamps: [5, 12, 18]}],
+          sentenceStructure: 'buried_lede',
+          tonality: 'hesitant',
+          clarityScore: 60
+        },
+        strategicThinking: {
+          frameworkUsage: [],
+          stakeholderAwareness: 55,
+          businessImpactClarity: 60,
+          recommendationStrength: 50
+        },
+        recommendations: ['Practice pause techniques', 'Use more assertive language'],
+        keyInsights: ['Clear improvement opportunities identified'],
+        improvementAreas: ['Filler word reduction', 'Executive presence'],
+        strengthAreas: []
+      }
+
       const request: PracticeModuleRequest = {
-        meetingAnalysis: TEST_SCENARIOS.NEEDS_IMPROVEMENT.analysis,
+        meetingAnalysis: mockAnalysis,
         userContent: {
           originalTranscript: 'Meeting transcript with filler words um and uh.',
           keyQuotes: ['I think we should maybe consider'],
@@ -335,7 +405,7 @@ describe('GPTService', () => {
       const result = await gptService.analyzeMeeting(request)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('quota exceeded')
+      expect(result.error).toContain('OpenAI quota exceeded')
     })
 
     it('should handle rate limit errors', async () => {
@@ -386,7 +456,7 @@ describe('GPTService', () => {
       const result = await gptService.analyzeMeeting(request)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('Invalid request')
+      expect(result.error).toContain('Invalid request to OpenAI API')
     })
 
     it('should handle generic errors', async () => {
@@ -402,7 +472,7 @@ describe('GPTService', () => {
       const result = await gptService.analyzeMeeting(request)
 
       expect(result.success).toBe(false)
-      expect(result.error).toContain('unexpected error')
+      expect(result.error).toContain('Something went wrong')
     })
   })
 

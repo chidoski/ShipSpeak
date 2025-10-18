@@ -45,8 +45,14 @@ const customJestConfig = {
   
   // Transform configuration
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }]
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { 
+      presets: ['next/babel'],
+      plugins: []
+    }]
   },
+  
+  // Extensions to resolve
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json'],
   
   // Setup files
   setupFiles: ['<rootDir>/jest.polyfills.js'],

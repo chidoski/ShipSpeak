@@ -3,6 +3,8 @@
  * Comprehensive mocking for OpenAI API integration testing
  */
 
+import { createSecureTestFile } from '../utils/security-helpers'
+
 // =============================================================================
 // MOCK DATA TYPES
 // =============================================================================
@@ -110,13 +112,16 @@ export const generateMockTranscription = (
   // Add filler words based on speaking quality
   if (hasFillerWords) {
     const fillerWords = ['um', 'uh', 'like', 'you know', 'so', 'actually']
-    const fillerCount = Math.floor(Math.random() * 10) + 5
+    const words = transcript.split(' ')
+    const fillerCount = Math.floor(Math.random() * 5) + 3
     
     for (let i = 0; i < fillerCount; i++) {
       const randomFiller = fillerWords[Math.floor(Math.random() * fillerWords.length)]
-      const insertPosition = Math.floor(Math.random() * transcript.length)
-      transcript = transcript.slice(0, insertPosition) + ` ${randomFiller},` + transcript.slice(insertPosition)
+      const insertPosition = Math.floor(Math.random() * words.length)
+      words.splice(insertPosition, 0, randomFiller + ',')
     }
+    
+    transcript = words.join(' ')
   }
 
   const response: MockTranscriptionResponse = {
@@ -517,3 +522,87 @@ export const TEST_SCENARIOS = {
 } as const
 
 export default MockOpenAIService
+
+// =============================================================================
+// TEST CASES FOR OPENAI MOCKS
+// =============================================================================
+
+describe('OpenAI Mock Service', () => {
+  let mockOpenAI: MockOpenAIService
+
+  beforeEach(() => {
+    mockOpenAI = new MockOpenAIService()
+  })
+
+  describe('Mock Data Generation', () => {
+    it('should generate realistic transcription data', () => {
+      const transcription = generateMockTranscription({
+        duration: 1800,
+        hasFillerWords: true,
+        speakingPace: 'normal'
+      })
+
+      expect(transcription.text).toBeDefined()
+      expect(transcription.duration).toBe(1800)
+      expect(transcription.language).toBe('en')
+      expect(transcription.text).toContain('Thank')
+    })
+
+    it('should generate meeting analysis based on transcript', () => {
+      const transcript = 'um, so like, I think we should um, move forward'
+      const analysis = generateMockMeetingAnalysis(transcript, {
+        userPerformance: 'poor'
+      })
+
+      expect(analysis.fillerWordsPerMinute).toBeGreaterThan(0)
+      expect(analysis.confidenceScore).toBeLessThan(70)
+      expect(analysis.improvementAreas).toContain('Filler word reduction')
+    })
+
+    it('should generate practice modules from analysis', () => {
+      const analysis = {
+        fillerWordsPerMinute: 8,
+        confidenceScore: 60,
+        speakingPace: 70,
+        structureScore: 55,
+        recommendations: [],
+        keyInsights: [],
+        improvementAreas: ['Filler word reduction', 'Executive presence']
+      }
+
+      const modules = generateMockPracticeModules(analysis)
+      expect(modules).toHaveLength(2)
+      expect(modules[0].type).toBe('FILLER_WORD_REDUCTION')
+      expect(modules[1].type).toBe('EXECUTIVE_PRESENCE')
+    })
+  })
+
+  describe('Mock Service Operations', () => {
+    it('should transcribe audio files', async () => {
+      const mockFile = new File(['audio data'], 'test.mp3', { type: 'audio/mpeg' })
+      const result = await mockOpenAI.transcribeAudio(mockFile)
+
+      expect(result.text).toBeDefined()
+      expect(result.language).toBe('en')
+    })
+
+    it('should generate chat completions', async () => {
+      const messages = [{
+        role: 'user',
+        content: 'analyze this meeting transcript for communication patterns'
+      }]
+
+      const result = await mockOpenAI.generateChatCompletion(messages)
+      expect(result.choices[0].message.content).toBeDefined()
+      expect(result.usage.total_tokens).toBeGreaterThan(0)
+    })
+
+    it('should simulate error scenarios', async () => {
+      await expect(mockOpenAI.simulateError('rate_limit'))
+        .rejects.toThrow('Rate limit exceeded')
+      
+      await expect(mockOpenAI.simulateError('auth'))
+        .rejects.toThrow('Invalid API key')
+    })
+  })
+})

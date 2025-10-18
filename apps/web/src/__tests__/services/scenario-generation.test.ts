@@ -569,6 +569,30 @@ describe('ScenarioGenerationService', () => {
 
   describe('Quality and Validation', () => {
     test('should validate scenario quality scores', async () => {
+      // Set up mock for both batch generation and personalization
+      mockGPTService.generateChatCompletion = jest.fn().mockResolvedValue({
+        success: true,
+        data: {
+          choices: [
+            {
+              message: {
+                content: JSON.stringify({
+                  scenarioText: 'Generated scenario text for quality testing',
+                  contextualBackground: 'Generated background for quality testing',
+                  stakeholderMotivation: 'Generated motivation for quality testing',
+                  initialStakeholderMessage: 'Generated message for quality testing',
+                  possibleUserResponses: ['Response 1', 'Response 2'],
+                  escalationPaths: [],
+                  successCriteria: ['Criteria 1'],
+                  debriefQuestions: ['Question 1']
+                })
+              }
+            }
+          ]
+        },
+        usage: { totalTokens: 500, promptTokens: 200, completionTokens: 300 }
+      })
+
       const personalizationContext: PersonalizationContext = {
         userId: mockUserProfile.id,
         userProfile: mockUserProfile,

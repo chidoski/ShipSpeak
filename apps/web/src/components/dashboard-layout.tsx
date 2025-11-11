@@ -44,8 +44,13 @@ interface NavigationItem {
 const navigationItems: NavigationItem[] = [
   { id: 'dashboard', label: 'Dashboard', path: '/dashboard', icon: '📊' },
   { id: 'meetings', label: 'Meetings', path: '/dashboard/meetings', icon: '🎯' },
+  { id: 'modules', label: 'Module Library', path: '/dashboard/modules', icon: '📚' },
   { id: 'practice', label: 'Practice', path: '/dashboard/practice', icon: '🎪' },
-  { id: 'analytics', label: 'Analytics', path: '/dashboard/analytics', icon: '📈' }
+  { id: 'progress', label: 'Progress', path: '/dashboard/progress', icon: '📈' },
+  { id: 'feedback', label: 'Feedback Analysis', path: '/dashboard/feedback', icon: '📋' },
+  { id: 'coaching', label: 'Coaching', path: '/dashboard/coaching', icon: '🎓' },
+  { id: 'help', label: 'Help & Guidance', path: '/dashboard/help', icon: '❓' },
+  { id: 'settings', label: 'Settings', path: '/dashboard/settings', icon: '⚙️' }
 ]
 
 // =============================================================================

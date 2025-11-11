@@ -1,0 +1,126 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-executive-background text-executive-text-primary;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  /* Executive Button Styles */
+  .btn-executive-primary {
+    @apply bg-executive-primary text-white hover:bg-executive-primary/90 
+           px-6 py-3 rounded-lg font-medium transition-colors 
+           focus:outline-none focus:ring-2 focus:ring-executive-accent/20;
+    min-height: theme('spacing.touch-md');
+  }
+  
+  .btn-executive-secondary {
+    @apply bg-executive-surface text-executive-primary border border-executive-secondary/20
+           hover:bg-executive-secondary/5 px-6 py-3 rounded-lg font-medium transition-colors
+           focus:outline-none focus:ring-2 focus:ring-executive-accent/20;
+    min-height: theme('spacing.touch-md');
+  }
+  
+  /* Executive Card Styles */
+  .card-executive {
+    @apply bg-executive-surface border border-executive-secondary/10 
+           rounded-xl shadow-sm hover:shadow-md transition-shadow;
+  }
+  
+  /* Competency Chart Styles */
+  .competency-chart {
+    @apply relative w-full h-64 bg-executive-surface rounded-lg;
+  }
+  
+  /* Executive Typography */
+  .heading-executive-1 {
+    @apply text-4xl font-bold text-executive-text-primary leading-tight;
+  }
+  
+  .heading-executive-2 {
+    @apply text-3xl font-semibold text-executive-text-primary leading-snug;
+  }
+  
+  .heading-executive-3 {
+    @apply text-2xl font-semibold text-executive-text-primary leading-normal;
+  }
+  
+  .body-executive {
+    @apply text-base text-executive-text-secondary leading-relaxed;
+  }
+  
+  /* Navigation Styles */
+  .nav-executive {
+    @apply bg-executive-surface border-b border-executive-secondary/10;
+  }
+  
+  .nav-item-executive {
+    @apply px-4 py-3 text-executive-text-secondary hover:text-executive-primary
+           hover:bg-executive-accent/5 rounded-lg transition-colors;
+    min-height: theme('spacing.touch-sm');
+  }
+  
+  .nav-item-active {
+    @apply text-executive-primary bg-executive-accent/10 font-medium;
+  }
+  
+  /* Form Styles */
+  .input-executive {
+    @apply w-full px-4 py-3 border border-executive-secondary/20 rounded-lg
+           bg-executive-surface text-executive-text-primary placeholder:text-executive-text-muted
+           focus:outline-none focus:ring-2 focus:ring-executive-accent/20 focus:border-executive-accent/40
+           transition-colors;
+    min-height: theme('spacing.touch-md');
+  }
+  
+  /* Progress Indicators */
+  .progress-bar-executive {
+    @apply w-full bg-executive-secondary/10 rounded-full overflow-hidden;
+  }
+  
+  .progress-fill-executive {
+    @apply h-2 bg-gradient-to-r from-executive-accent to-executive-primary 
+           transition-all duration-500 ease-out;
+  }
+}
+
+@layer utilities {
+  /* Executive Spacing */
+  .space-executive-sm {
+    @apply space-y-4;
+  }
+  
+  .space-executive-md {
+    @apply space-y-6;
+  }
+  
+  .space-executive-lg {
+    @apply space-y-8;
+  }
+  
+  /* Executive Layout */
+  .container-executive {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .grid-executive-cards {
+    @apply grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4;
+  }
+  
+  /* Animation Classes */
+  .animate-fade-in {
+    @apply animate-fade-in;
+  }
+  
+  .animate-slide-up {
+    @apply animate-slide-up;
+  }
+}

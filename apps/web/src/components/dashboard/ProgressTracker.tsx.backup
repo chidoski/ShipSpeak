@@ -1,0 +1,386 @@
+/**
+ * Progress Tracker Component for ShipSpeak
+ * Visual progress indicators and milestone tracking for PM career development
+ * Max 300 lines for efficiency and maintainability
+ */
+
+'use client'
+
+import React from 'react'
+import { User } from '@/types/auth'
+import { LearningData } from '@/types/dashboard'
+
+// =============================================================================
+// TYPES AND INTERFACES
+// =============================================================================
+
+interface ProgressTrackerProps {
+  user: User | null
+  learningData: LearningData | null
+}
+
+interface MilestoneData {
+  id: string
+  title: string
+  description: string
+  completed: boolean
+  progress: number
+  category: string
+}
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+export const ProgressTracker: React.FC<ProgressTrackerProps> = ({
+  user,
+  learningData
+}) => {
+  // =============================================================================
+  // DATA GENERATION
+  // =============================================================================
+
+  const getMilestones = (): MilestoneData[] => {
+    if (!user || !learningData) return []
+
+    return [
+      {
+        id: 'foundation-skills',
+        title: 'Foundation Skills Mastery',
+        description: 'Core PM communication competencies',
+        completed: learningData.foundationSkillsMastery.pmVocabulary >= 80,
+        progress: Math.round((
+          learningData.foundationSkillsMastery.pmVocabulary +
+          learningData.foundationSkillsMastery.executivePresence +
+          learningData.foundationSkillsMastery.frameworkApplication
+        ) / 3),
+        category: 'communication'
+      },
+      {
+        id: 'practice-consistency',
+        title: 'Practice Consistency',
+        description: 'Regular skill development engagement',
+        completed: learningData.weeklyStreak >= 4,
+        progress: Math.min(100, (learningData.weeklyStreak / 8) * 100),
+        category: 'engagement'
+      },
+      {
+        id: 'module-completion',
+        title: 'Module Completion',
+        description: `${user.industry} PM communication modules`,
+        completed: learningData.modulesCompleted >= 10,
+        progress: (learningData.modulesCompleted / 10) * 100,
+        category: 'knowledge'
+      },
+      {
+        id: 'executive-readiness',
+        title: 'Executive Readiness',
+        description: 'Preparation for senior leadership roles',
+        completed: learningData.foundationSkillsMastery.executivePresence >= 85,
+        progress: learningData.foundationSkillsMastery.executivePresence,
+        category: 'leadership'
+      }
+    ]
+  }
+
+  const getOverallProgress = (): number => {
+    if (!learningData) return 0
+    
+    const milestones = getMilestones()
+    const totalProgress = milestones.reduce((sum, milestone) => sum + milestone.progress, 0)
+    return Math.round(totalProgress / milestones.length)
+  }
+
+  // =============================================================================
+  // RENDER HELPERS
+  // =============================================================================
+
+  const renderProgressCircle = (progress: number, size: number = 60) => {
+    const radius = (size - 8) / 2
+    const circumference = 2 * Math.PI * radius
+    const strokeDashoffset = circumference - (progress / 100) * circumference
+
+    return (
+      <div className="progress-circle" style={{ width: size, height: size }}>
+        <svg width={size} height={size}>
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#E5E7EB"
+            strokeWidth="4"
+            fill="none"
+          />
+          <circle
+            cx={size / 2}
+            cy={size / 2}
+            r={radius}
+            stroke="#3B82F6"
+            strokeWidth="4"
+            fill="none"
+            strokeDasharray={circumference}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+          />
+        </svg>
+        <div className="progress-text">
+          {Math.round(progress)}%
+        </div>
+      </div>
+    )
+  }
+
+  const renderMilestone = (milestone: MilestoneData) => {
+    const categoryIcons: Record<string, string> = {
+      communication: '💬',
+      engagement: '🔥',
+      knowledge: '📚',
+      leadership: '👑'
+    }
+
+    const categoryColors: Record<string, string> = {
+      communication: '#3B82F6',
+      engagement: '#F59E0B',
+      knowledge: '#10B981',
+      leadership: '#8B5CF6'
+    }
+
+    return (
+      <div
+        key={milestone.id}
+        data-testid={`milestone-${milestone.id}`}
+        className={`milestone ${milestone.completed ? 'completed' : ''}`}
+      >
+        <div className="milestone-header">
+          <div
+            className="milestone-icon"
+            style={{ backgroundColor: categoryColors[milestone.category] }}
+          >
+            {categoryIcons[milestone.category]}
+          </div>
+          <div className="milestone-info">
+            <h3 className="milestone-title">{milestone.title}</h3>
+            <p className="milestone-description">{milestone.description}</p>
+          </div>
+          <div className="milestone-progress">
+            {renderProgressCircle(milestone.progress, 50)}
+          </div>
+        </div>
+        
+        {milestone.completed && (
+          <div className="milestone-badge">
+            <span className="badge-icon">✓</span>
+            <span className="badge-text">Completed</span>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // =============================================================================
+  // MAIN RENDER
+  // =============================================================================
+
+  const milestones = getMilestones()
+  const overallProgress = getOverallProgress()
+
+  if (!user || !learningData) return null
+
+  return (
+    <div 
+      data-testid="progress-tracker"
+      className="progress-tracker"
+    >
+      <div className="tracker-header">
+        <div className="header-content">
+          <h2 className="tracker-title">Your PM Development Progress</h2>
+          <p className="tracker-subtitle">
+            Track your journey to {user.role === 'PM' ? 'Senior PM' : 'Executive'} communication mastery
+          </p>
+        </div>
+        <div className="overall-progress">
+          {renderProgressCircle(overallProgress, 80)}
+        </div>
+      </div>
+      
+      <div className="milestones-grid">
+        {milestones.map(renderMilestone)}
+      </div>
+      
+      <style jsx>{`
+        .progress-tracker {
+          background: white;
+          border-radius: 1rem;
+          padding: 2rem;
+          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
+          border: 1px solid #f0f0f0;
+        }
+        
+        .tracker-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 2rem;
+          gap: 2rem;
+        }
+        
+        .header-content {
+          flex: 1;
+        }
+        
+        .tracker-title {
+          font-size: 1.5rem;
+          font-weight: bold;
+          color: #1F2937;
+          margin: 0 0 0.5rem 0;
+        }
+        
+        .tracker-subtitle {
+          font-size: 0.875rem;
+          color: #6B7280;
+          margin: 0;
+        }
+        
+        .overall-progress {
+          flex-shrink: 0;
+        }
+        
+        .milestones-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+          gap: 1.5rem;
+        }
+        
+        .milestone {
+          background: #F9FAFB;
+          border-radius: 0.75rem;
+          padding: 1.25rem;
+          border: 1px solid #E5E7EB;
+          transition: all 0.2s ease;
+          position: relative;
+        }
+        
+        .milestone.completed {
+          background: linear-gradient(135deg, #F0FDF4, #DCFCE7);
+          border-color: #10B981;
+        }
+        
+        .milestone:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .milestone-header {
+          display: flex;
+          align-items: flex-start;
+          gap: 1rem;
+        }
+        
+        .milestone-icon {
+          width: 2.5rem;
+          height: 2.5rem;
+          border-radius: 0.5rem;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: white;
+          font-size: 1.125rem;
+          flex-shrink: 0;
+        }
+        
+        .milestone-info {
+          flex: 1;
+        }
+        
+        .milestone-title {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #1F2937;
+          margin: 0 0 0.25rem 0;
+        }
+        
+        .milestone-description {
+          font-size: 0.875rem;
+          color: #6B7280;
+          margin: 0;
+          line-height: 1.4;
+        }
+        
+        .milestone-progress {
+          flex-shrink: 0;
+        }
+        
+        .progress-circle {
+          position: relative;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        
+        .progress-text {
+          position: absolute;
+          font-size: 0.75rem;
+          font-weight: 600;
+          color: #1F2937;
+        }
+        
+        .milestone-badge {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          margin-top: 1rem;
+          padding: 0.5rem 1rem;
+          background: white;
+          border-radius: 2rem;
+          border: 1px solid #10B981;
+          color: #10B981;
+          font-size: 0.875rem;
+          font-weight: 500;
+          width: fit-content;
+        }
+        
+        .badge-icon {
+          font-size: 0.875rem;
+        }
+        
+        @media (max-width: 768px) {
+          .progress-tracker {
+            padding: 1.5rem;
+          }
+          
+          .tracker-header {
+            flex-direction: column;
+            gap: 1rem;
+            text-align: center;
+          }
+          
+          .milestones-grid {
+            grid-template-columns: 1fr;
+            gap: 1rem;
+          }
+          
+          .milestone {
+            padding: 1rem;
+          }
+          
+          .milestone-header {
+            gap: 0.75rem;
+          }
+        }
+        
+        @media (max-width: 480px) {
+          .tracker-title {
+            font-size: 1.25rem;
+          }
+          
+          .milestone-icon {
+            width: 2rem;
+            height: 2rem;
+            font-size: 1rem;
+          }
+        }
+      `}</style>
+    </div>
+  )
+}

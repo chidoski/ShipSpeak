@@ -90,3 +90,92 @@ export interface ProgressUpdate {
   meetingId?: string
   timestamp?: string
 }
+
+// =============================================================================
+// PM-SPECIFIC DASHBOARD TYPES
+// =============================================================================
+
+import { User as AuthUser, PMRole, Industry } from './auth'
+import { CompetencyCategory } from './competency'
+
+export interface PMProgressData {
+  currentLevel: PMRole
+  targetLevel: PMRole
+  progressPercentage: number
+  skillGaps: SkillGap[]
+  industryBenchmarks: IndustryBenchmarks
+  weekStreak?: number
+}
+
+export interface SkillGap {
+  area: CompetencyCategory
+  current: number
+  target: number
+  industry: Industry
+  frameworks?: string[]
+  priority: 'critical' | 'important' | 'developing'
+}
+
+export interface IndustryBenchmarks {
+  sector: Industry
+  regulatoryCompliance?: number
+  riskCommunication?: number
+  trustBuilding?: number
+  roiCommunication?: number
+  userEngagement?: number
+}
+
+export interface LearningData {
+  weeklyStreak: number
+  modulesCompleted: number
+  practiceSessionsCompleted: number
+  foundationSkillsMastery: FoundationSkills
+  nextMilestones: string[]
+  totalHoursPracticed: number
+  lastActivityDate: string
+}
+
+export interface FoundationSkills {
+  pmVocabulary: number
+  executivePresence: number
+  frameworkApplication: number
+  stakeholderManagement: number
+  businessImpact: number
+}
+
+export interface QuickStatCard {
+  id: string
+  title: string
+  value: string | number
+  trend: 'up' | 'down' | 'stable'
+  trendValue: number
+  description: string
+  icon: string
+  color: 'blue' | 'green' | 'purple' | 'orange'
+}
+
+export interface EmptyState {
+  type: 'no_meetings' | 'new_user' | 'practice_first' | 'meeting_analysis'
+  headline: string
+  subtext: string
+  visual?: string
+  ctas: EmptyStateCTA[]
+  progressIndicators?: ProgressIndicator[]
+}
+
+export interface EmptyStateCTA {
+  id: string
+  text: string
+  href: string
+  type: 'primary' | 'secondary' | 'tertiary'
+  icon?: string
+}
+
+export interface ProgressIndicator {
+  label: string
+  current: number
+  target: number
+  unit: string
+}
+
+export type PMTransitionType = 'PO_TO_PM' | 'PM_TO_SENIOR' | 'SENIOR_TO_GROUP' | 'GROUP_TO_DIRECTOR'

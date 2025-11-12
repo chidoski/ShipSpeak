@@ -147,7 +147,7 @@ describe('PMTransitionDetector', () => {
     ]
 
     for (const transition of transitions) {
-      jest.clearMocks()
+      jest.clearAllMocks()
       
       render(
         <PMTransitionDetector
@@ -514,7 +514,7 @@ describe('ExecutivePresenceScorer', () => {
     const careerLevels: PMCareerLevel[] = ['IC', 'SENIOR', 'STAFF', 'PRINCIPAL', 'DIRECTOR']
 
     for (const level of careerLevels) {
-      jest.clearMocks()
+      jest.clearAllMocks()
       
       render(
         <ExecutivePresenceScorer

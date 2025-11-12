@@ -1,0 +1,38 @@
+{
+  "name": "@shipspeak/database",
+  "version": "1.0.0",
+  "description": "ShipSpeak database schema, types, and migration system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "migrate": "ts-node migrate.ts",
+    "migrate:up": "ts-node migrate.ts up",
+    "migrate:down": "ts-node migrate.ts down",
+    "migrate:status": "ts-node migrate.ts status",
+    "type-check": "tsc --noEmit"
+  },
+  "files": [
+    "dist/",
+    "migrations/",
+    "schema.sql",
+    "seed-data.sql"
+  ],
+  "dependencies": {
+    "@supabase/supabase-js": "^2.38.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.0",
+    "typescript": "^5.0.0"
+  },
+  "keywords": [
+    "database",
+    "postgresql",
+    "supabase",
+    "migrations",
+    "types"
+  ],
+  "author": "ShipSpeak Team",
+  "license": "MIT"
+}

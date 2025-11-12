@@ -1,5 +1,28 @@
+// Mock environment variables
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+
+// Mock the Supabase client
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: jest.fn(() => ({
+    auth: {
+      signInWithPassword: jest.fn(),
+      signUp: jest.fn(),
+      signOut: jest.fn(),
+      getUser: jest.fn(),
+      getSession: jest.fn(),
+      resetPasswordForEmail: jest.fn(),
+      updateUser: jest.fn()
+    }
+  }))
+}));
+
 import { authService } from '@/services/auth.service';
 import { PMRole, User, LoginCredentials, SignupCredentials } from '@/types/auth';
+import { createClient } from '@/lib/supabase/client';
+
+// Get the mocked Supabase client
+const mockSupabase = createClient() as any;
 
 // Mock localStorage
 const localStorageMock = {
@@ -14,6 +37,12 @@ describe('AuthService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.getItem.mockReturnValue(null);
+    // Reset all Supabase mocks
+    mockSupabase.auth.signInWithPassword.mockResolvedValue({ data: null, error: null });
+    mockSupabase.auth.signUp.mockResolvedValue({ data: null, error: null });
+    mockSupabase.auth.signOut.mockResolvedValue({ error: null });
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: null }, error: null });
+    mockSupabase.auth.getSession.mockResolvedValue({ data: { session: null }, error: null });
   });
 
   describe('login', () => {
@@ -78,17 +107,25 @@ describe('AuthService', () => {
     });
 
     it('should login successfully with valid credentials', async () => {
+      // Mock successful Supabase login
+      mockSupabase.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: { id: 'test-user-id', email: validCredentials.email },
+          session: { access_token: 'test-token' }
+        },
+        error: null
+      });
+
       const response = await authService.login(validCredentials);
 
       expect(response.success).toBe(true);
       expect(response.user).toBeDefined();
-      expect(response.user?.email).toBe(validCredentials.email);
-      expect(response.token).toBeDefined();
-      expect(response.requiresOnboarding).toBe(false);
-      expect(localStorageMock.setItem).toHaveBeenCalledWith(
-        'shipspeak_token',
-        expect.stringContaining('token_')
-      );
+      expect(response.user?.email).toBe('user@example.com'); // Mock user profile
+      expect(response.token).toBe('test-token');
+      expect(mockSupabase.auth.signInWithPassword).toHaveBeenCalledWith({
+        email: validCredentials.email,
+        password: validCredentials.password
+      });
     });
 
     it('should fail login with non-existent user', async () => {
@@ -97,48 +134,51 @@ describe('AuthService', () => {
         password: 'password123'
       };
 
+      // Mock Supabase error response
+      mockSupabase.auth.signInWithPassword.mockResolvedValue({
+        data: null,
+        error: { message: 'Invalid login credentials' }
+      });
+
       const response = await authService.login(invalidCredentials);
 
       expect(response.success).toBe(false);
-      expect(response.message).toBe('User not found. Please check your email or sign up.');
+      expect(response.message).toBe('Invalid login credentials');
       expect(response.user).toBeUndefined();
       expect(response.token).toBeUndefined();
     });
 
     it('should require onboarding for incomplete users', async () => {
-      const incompleteUser: User = {
-        id: 'user_456',
-        email: 'incomplete@example.com',
-        name: 'Incomplete User',
-        role: 'Product Owner',
-        industry: 'enterprise',
-        isExecutive: false,
-        competencyBaseline: {} as any,
-        learningPath: 'practice-first',
-        onboardingCompleted: false,
-        createdAt: '2024-01-01T00:00:00.000Z',
-        lastLoginAt: '2024-01-01T00:00:00.000Z'
-      };
-
-      localStorageMock.getItem.mockImplementation((key: string) => {
-        if (key === 'shipspeak_all_users') {
-          return JSON.stringify([incompleteUser]);
-        }
-        return null;
-      });
-
       const credentials: LoginCredentials = {
         email: 'incomplete@example.com',
         password: 'password123'
       };
 
+      // Mock successful Supabase login for incomplete user
+      mockSupabase.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: { id: 'user_456', email: credentials.email },
+          session: { access_token: 'test-token' }
+        },
+        error: null
+      });
+
       const response = await authService.login(credentials);
 
       expect(response.success).toBe(true);
-      expect(response.requiresOnboarding).toBe(true);
+      expect(response.requiresOnboarding).toBe(true); // Mock getUserProfile returns incomplete user
     });
 
     it('should update lastLoginAt on successful login', async () => {
+      // Mock successful Supabase login
+      mockSupabase.auth.signInWithPassword.mockResolvedValue({
+        data: {
+          user: { id: 'test-user-id', email: validCredentials.email },
+          session: { access_token: 'test-token' }
+        },
+        error: null
+      });
+
       const response = await authService.login(validCredentials);
 
       expect(response.success).toBe(true);
@@ -155,7 +195,14 @@ describe('AuthService', () => {
     };
 
     it('should create new user successfully', async () => {
-      localStorageMock.getItem.mockReturnValue('[]'); // Empty users array
+      // Mock successful Supabase signup
+      mockSupabase.auth.signUp.mockResolvedValue({
+        data: {
+          user: { id: 'new-user-id', email: validSignupCredentials.email },
+          session: { access_token: 'test-token' }
+        },
+        error: null
+      });
 
       const response = await authService.signup(validSignupCredentials);
 
@@ -166,16 +213,23 @@ describe('AuthService', () => {
       expect(response.user?.role).toBe(validSignupCredentials.role);
       expect(response.user?.onboardingCompleted).toBe(false);
       expect(response.requiresOnboarding).toBe(true);
-      expect(response.token).toBeDefined();
+      expect(response.token).toBe('test-token');
     });
 
     it('should identify executive users during signup', async () => {
-      localStorageMock.getItem.mockReturnValue('[]');
-
       const executiveCredentials: SignupCredentials = {
         ...validSignupCredentials,
         role: 'Director'
       };
+
+      // Mock successful Supabase signup
+      mockSupabase.auth.signUp.mockResolvedValue({
+        data: {
+          user: { id: 'exec-user-id', email: executiveCredentials.email },
+          session: { access_token: 'test-token' }
+        },
+        error: null
+      });
 
       const response = await authService.signup(executiveCredentials);
 
@@ -184,35 +238,27 @@ describe('AuthService', () => {
     });
 
     it('should fail signup with existing email', async () => {
-      const existingUser: User = {
-        id: 'user_123',
-        email: validSignupCredentials.email,
-        name: 'Existing User',
-        role: 'PM',
-        industry: 'enterprise',
-        isExecutive: false,
-        competencyBaseline: {} as any,
-        learningPath: 'practice-first',
-        onboardingCompleted: true,
-        createdAt: '2024-01-01T00:00:00.000Z',
-        lastLoginAt: '2024-01-01T00:00:00.000Z'
-      };
-
-      localStorageMock.getItem.mockImplementation((key: string) => {
-        if (key === 'shipspeak_all_users') {
-          return JSON.stringify([existingUser]);
-        }
-        return null;
+      // Mock Supabase error for existing email
+      mockSupabase.auth.signUp.mockResolvedValue({
+        data: null,
+        error: { message: 'User already registered' }
       });
 
       const response = await authService.signup(validSignupCredentials);
 
       expect(response.success).toBe(false);
-      expect(response.message).toBe('User already exists with this email address.');
+      expect(response.message).toBe('User already registered');
     });
 
     it('should generate appropriate competency baseline for role', async () => {
-      localStorageMock.getItem.mockReturnValue('[]');
+      // Mock successful Supabase signup
+      mockSupabase.auth.signUp.mockResolvedValue({
+        data: {
+          user: { id: 'new-user-id', email: validSignupCredentials.email },
+          session: { access_token: 'test-token' }
+        },
+        error: null
+      });
 
       const response = await authService.signup(validSignupCredentials);
 
@@ -227,71 +273,75 @@ describe('AuthService', () => {
     it('should clear all auth data', async () => {
       await authService.logout();
 
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('shipspeak_token');
-      expect(localStorageMock.removeItem).toHaveBeenCalledWith('shipspeak_user');
+      expect(mockSupabase.auth.signOut).toHaveBeenCalled();
       expect(localStorageMock.removeItem).toHaveBeenCalledWith('shipspeak_onboarding');
     });
   });
 
   describe('getCurrentUser', () => {
-    it('should return current user when valid data exists', () => {
+    it('should return current user when authenticated', async () => {
       const mockUser = { id: 'user_123', email: 'test@example.com' };
-      localStorageMock.getItem.mockReturnValue(JSON.stringify(mockUser));
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: mockUser },
+        error: null
+      });
 
-      const user = authService.getCurrentUser();
+      const user = await authService.getCurrentUser();
 
-      expect(user).toEqual(mockUser);
-      expect(localStorageMock.getItem).toHaveBeenCalledWith('shipspeak_user');
+      expect(user).toBeDefined();
+      expect(user?.id).toBe('user_123');
     });
 
-    it('should return null when no user data exists', () => {
-      localStorageMock.getItem.mockReturnValue(null);
+    it('should return null when not authenticated', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: null
+      });
 
-      const user = authService.getCurrentUser();
+      const user = await authService.getCurrentUser();
 
       expect(user).toBeNull();
     });
 
-    it('should return null when invalid JSON data exists', () => {
-      localStorageMock.getItem.mockReturnValue('invalid json');
+    it('should return null on auth error', async () => {
+      mockSupabase.auth.getUser.mockResolvedValue({
+        data: { user: null },
+        error: { message: 'Invalid token' }
+      });
 
-      const user = authService.getCurrentUser();
+      const user = await authService.getCurrentUser();
 
       expect(user).toBeNull();
     });
   });
 
   describe('isAuthenticated', () => {
-    it('should return true when both token and user exist', () => {
-      localStorageMock.getItem.mockImplementation((key: string) => {
-        if (key === 'shipspeak_token') return 'valid_token';
-        if (key === 'shipspeak_user') return JSON.stringify({ id: 'user_123' });
-        return null;
+    it('should return true when session exists', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: { access_token: 'valid_token' } },
+        error: null
       });
 
-      const isAuth = authService.isAuthenticated();
+      const isAuth = await authService.isAuthenticated();
 
       expect(isAuth).toBe(true);
     });
 
-    it('should return false when token is missing', () => {
-      localStorageMock.getItem.mockImplementation((key: string) => {
-        if (key === 'shipspeak_user') return JSON.stringify({ id: 'user_123' });
-        return null;
+    it('should return false when no session exists', async () => {
+      mockSupabase.auth.getSession.mockResolvedValue({
+        data: { session: null },
+        error: null
       });
 
-      const isAuth = authService.isAuthenticated();
+      const isAuth = await authService.isAuthenticated();
 
       expect(isAuth).toBe(false);
     });
 
-    it('should return false when user is missing', () => {
-      localStorageMock.getItem.mockImplementation((key: string) => {
-        if (key === 'shipspeak_token') return 'valid_token';
-        return null;
-      });
+    it('should return false on error', async () => {
+      mockSupabase.auth.getSession.mockRejectedValue(new Error('Auth error'));
 
-      const isAuth = authService.isAuthenticated();
+      const isAuth = await authService.isAuthenticated();
 
       expect(isAuth).toBe(false);
     });

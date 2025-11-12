@@ -20,7 +20,7 @@ jest.mock('next/navigation', () => ({
 }))
 
 // Import component after mocks
-import { DashboardLayout } from '@/components/dashboard-layout'
+import { DashboardLayout } from '../../components/dashboard-layout'
 
 describe('DashboardLayout Component', () => {
   beforeEach(() => {
@@ -62,7 +62,7 @@ describe('DashboardLayout Component', () => {
       expect(screen.getByText('Dashboard')).toBeInTheDocument()
       expect(screen.getByText('Meetings')).toBeInTheDocument()
       expect(screen.getByText('Practice')).toBeInTheDocument()
-      expect(screen.getByText('Analytics')).toBeInTheDocument()
+      expect(screen.getByText('Progress')).toBeInTheDocument()
     })
   })
 

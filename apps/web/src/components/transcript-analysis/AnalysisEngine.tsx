@@ -75,6 +75,7 @@ export const AnalysisEngine: React.FC<AnalysisEngineProps> = ({
   }, [onProgressUpdate])
 
   const processTranscriptAnalysis = useCallback(async () => {
+    const startTime = Date.now()
     try {
       setAnalysisState(prev => ({ ...prev, status: 'PROCESSING' }))
 
@@ -161,7 +162,6 @@ export const AnalysisEngine: React.FC<AnalysisEngineProps> = ({
   // Auto-start analysis when component mounts
   useEffect(() => {
     if (analysisState.status === 'IDLE') {
-      const startTime = Date.now()
       processTranscriptAnalysis()
     }
   }, [processTranscriptAnalysis, analysisState.status])

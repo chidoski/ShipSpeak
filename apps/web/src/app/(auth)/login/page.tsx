@@ -145,11 +145,17 @@ export default function LoginPage() {
           </form>
 
           {/* Sign Up Link */}
-          <div className="mt-6 text-center">
+          <div className="mt-6 text-center space-y-2">
             <p className="text-sm text-gray-600">
               New to ShipSpeak?{' '}
               <Link href="/signup" className="font-medium text-blue-600 hover:text-blue-500">
                 Create your account
+              </Link>
+            </p>
+            <p className="text-sm text-gray-600">
+              Forgot your password?{' '}
+              <Link href="/reset-password" className="font-medium text-blue-600 hover:text-blue-500">
+                Reset it here
               </Link>
             </p>
           </div>

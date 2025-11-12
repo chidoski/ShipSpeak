@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { AuthState, User, LoginCredentials, SignupCredentials } from '@/types/auth';
 import { authService } from '@/services/auth.service';
+import { attemptAutoMigration } from '@/utils/migration';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginCredentials) => Promise<{ success: boolean; message?: string; requiresOnboarding?: boolean }>;
@@ -48,10 +49,10 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [authState.loading, authState.isAuthenticated, authState.user, pathname]);
 
-  const initializeAuth = () => {
+  const initializeAuth = async () => {
     try {
-      const isAuthenticated = authService.isAuthenticated();
-      const user = authService.getCurrentUser();
+      const isAuthenticated = await authService.isAuthenticated();
+      const user = await authService.getCurrentUser();
       const onboardingData = authService.getOnboardingData();
 
       setAuthState({
@@ -61,6 +62,13 @@ export default function AuthProvider({ children }: AuthProviderProps) {
         error: null,
         onboardingData
       });
+
+      // Attempt auto-migration after successful authentication
+      if (isAuthenticated && user) {
+        attemptAutoMigration().catch(error => {
+          console.warn('Auto migration failed:', error);
+        });
+      }
     } catch (error) {
       setAuthState({
         isAuthenticated: false,
@@ -252,8 +260,8 @@ export default function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
-  const refreshUser = () => {
-    const user = authService.getCurrentUser();
+  const refreshUser = async () => {
+    const user = await authService.getCurrentUser();
     const onboardingData = authService.getOnboardingData();
     
     setAuthState(prev => ({

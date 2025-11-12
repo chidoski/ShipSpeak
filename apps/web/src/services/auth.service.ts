@@ -7,20 +7,42 @@ import {
   CompetencyBaseline,
   PMRole 
 } from '@/types/auth';
+import { createClient } from '@/lib/supabase/client';
 
 class AuthService {
+  private supabase = createClient();
   private readonly STORAGE_KEYS = {
-    USER: 'shipspeak_user',
-    TOKEN: 'shipspeak_token',
     ONBOARDING: 'shipspeak_onboarding'
   };
 
-  private generateUserId(): string {
-    return 'user_' + Math.random().toString(36).substr(2, 9) + '_' + Date.now();
+  private mapDbRoleToUserRole(dbRole: string | null): PMRole {
+    const roleMap: Record<string, PMRole> = {
+      'ic_pm': 'PM',
+      'senior_pm': 'Senior PM',
+      'staff_pm': 'Staff PM',
+      'principal_pm': 'Principal PM',
+      'director': 'Director',
+      'vp': 'VP Product',
+      'po_transitioning': 'Product Owner'
+    };
+
+    return roleMap[dbRole || ''] || 'PM';
   }
 
-  private generateToken(): string {
-    return 'token_' + Math.random().toString(36).substr(2, 16) + '_' + Date.now();
+  private mapUserRoleToDbRole(userRole: PMRole): string {
+    const roleMap: Record<PMRole, string> = {
+      'PM': 'ic_pm',
+      'Senior PM': 'senior_pm',
+      'Staff PM': 'staff_pm',
+      'Principal PM': 'principal_pm',
+      'Director': 'director',
+      'VP Product': 'vp',
+      'CPO': 'vp', // Map CPO to vp in database
+      'Group PM': 'principal_pm', // Map Group PM to principal
+      'Product Owner': 'po_transitioning'
+    };
+
+    return roleMap[userRole] || 'ic_pm';
   }
 
   private getDefaultCompetencyBaseline(role: PMRole): CompetencyBaseline {
@@ -67,109 +89,119 @@ class AuthService {
   }
 
   async login(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 800));
+    try {
+      const { data, error } = await this.supabase.auth.signInWithPassword({
+        email: credentials.email,
+        password: credentials.password
+      });
 
-    // Mock validation - in real app this would hit an API
-    const users = this.getAllUsers();
-    const user = users.find(u => u.email === credentials.email);
+      if (error) {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
 
-    if (!user) {
+      if (data.user) {
+        // Get user profile from database
+        const user = await this.getUserProfile(data.user.id);
+        
+        return {
+          success: true,
+          user,
+          token: data.session?.access_token,
+          requiresOnboarding: !user?.onboardingCompleted
+        };
+      }
+
       return {
         success: false,
-        message: 'User not found. Please check your email or sign up.'
+        message: 'Login failed'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'An unexpected error occurred'
       };
     }
-
-    // Update last login
-    user.lastLoginAt = new Date().toISOString();
-    this.updateUser(user);
-
-    const token = this.generateToken();
-    localStorage.setItem(this.STORAGE_KEYS.TOKEN, token);
-    localStorage.setItem(this.STORAGE_KEYS.USER, JSON.stringify(user));
-
-    return {
-      success: true,
-      user,
-      token,
-      requiresOnboarding: !user.onboardingCompleted
-    };
   }
 
   async signup(credentials: SignupCredentials): Promise<AuthResponse> {
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    try {
+      const { data, error } = await this.supabase.auth.signUp({
+        email: credentials.email,
+        password: credentials.password,
+        options: {
+          data: {
+            name: credentials.name,
+            role: credentials.role
+          }
+        }
+      });
 
-    // Check if user already exists
-    const users = this.getAllUsers();
-    const existingUser = users.find(u => u.email === credentials.email);
+      if (error) {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
 
-    if (existingUser) {
+      if (data.user) {
+        // Create user profile in database
+        const user = await this.createUserProfile(data.user.id, credentials);
+        
+        return {
+          success: true,
+          user,
+          token: data.session?.access_token,
+          requiresOnboarding: true
+        };
+      }
+
       return {
         success: false,
-        message: 'User already exists with this email address.'
+        message: 'Signup failed'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'An unexpected error occurred'
       };
     }
-
-    // Create new user
-    const userId = this.generateUserId();
-    const isExecutive = ['Director', 'VP Product', 'CPO'].includes(credentials.role);
-    
-    const user: User = {
-      id: userId,
-      email: credentials.email,
-      name: credentials.name,
-      role: credentials.role,
-      industry: 'enterprise', // Default, will be set in onboarding
-      isExecutive,
-      competencyBaseline: this.getDefaultCompetencyBaseline(credentials.role),
-      learningPath: 'practice-first', // Default, will be determined in onboarding
-      onboardingCompleted: false,
-      createdAt: new Date().toISOString(),
-      lastLoginAt: new Date().toISOString()
-    };
-
-    // Save user
-    users.push(user);
-    localStorage.setItem('shipspeak_all_users', JSON.stringify(users));
-
-    // Generate token
-    const token = this.generateToken();
-    localStorage.setItem(this.STORAGE_KEYS.TOKEN, token);
-    localStorage.setItem(this.STORAGE_KEYS.USER, JSON.stringify(user));
-
-    return {
-      success: true,
-      user,
-      token,
-      requiresOnboarding: true
-    };
   }
 
   async logout(): Promise<void> {
-    localStorage.removeItem(this.STORAGE_KEYS.TOKEN);
-    localStorage.removeItem(this.STORAGE_KEYS.USER);
+    await this.supabase.auth.signOut();
     localStorage.removeItem(this.STORAGE_KEYS.ONBOARDING);
   }
 
-  getCurrentUser(): User | null {
-    const userStr = localStorage.getItem(this.STORAGE_KEYS.USER);
-    if (!userStr) return null;
-    
+  async getCurrentUser(): Promise<User | null> {
     try {
-      return JSON.parse(userStr);
+      const { data: { user } } = await this.supabase.auth.getUser();
+      if (!user) return null;
+      
+      return await this.getUserProfile(user.id);
     } catch {
       return null;
     }
   }
 
-  getToken(): string | null {
-    return localStorage.getItem(this.STORAGE_KEYS.TOKEN);
+  async getToken(): Promise<string | null> {
+    try {
+      const { data: { session } } = await this.supabase.auth.getSession();
+      return session?.access_token || null;
+    } catch {
+      return null;
+    }
   }
 
-  isAuthenticated(): boolean {
-    return this.getToken() !== null && this.getCurrentUser() !== null;
+  async isAuthenticated(): Promise<boolean> {
+    try {
+      const { data: { session } } = await this.supabase.auth.getSession();
+      return !!session;
+    } catch {
+      return false;
+    }
   }
 
   saveOnboardingData(data: Partial<OnboardingData>): void {
@@ -190,54 +222,220 @@ class AuthService {
   }
 
   async completeOnboarding(data: OnboardingData): Promise<AuthResponse> {
-    const user = this.getCurrentUser();
-    if (!user) {
+    try {
+      const { data: { user: authUser } } = await this.supabase.auth.getUser();
+      if (!authUser) {
+        return {
+          success: false,
+          message: 'No authenticated user found'
+        };
+      }
+
+      const user = await this.getUserProfile(authUser.id);
+      if (!user) {
+        return {
+          success: false,
+          message: 'User profile not found'
+        };
+      }
+
+      // Update user with onboarding data
+      const updatedUser: User = {
+        ...user,
+        industry: data.industryContext?.sector || 'enterprise',
+        competencyBaseline: data.competencyBaseline || user.competencyBaseline,
+        learningPath: data.recommendedPath || 'practice-first',
+        onboardingCompleted: true
+      };
+
+      // Update profile in database with onboarding completion
+      await this.updateUserProfile(updatedUser);
+      
+      // Also mark onboarding as completed in the database
+      await this.supabase
+        .from('profiles')
+        .update({ 
+          industry: updatedUser.industry,
+          // Add onboarding completed flag if we add it to schema later
+        })
+        .eq('id', authUser.id);
+      
+      localStorage.removeItem(this.STORAGE_KEYS.ONBOARDING);
+
+      return {
+        success: true,
+        user: updatedUser,
+        token: (await this.supabase.auth.getSession()).data.session?.access_token
+      };
+    } catch (error) {
       return {
         success: false,
-        message: 'No authenticated user found'
+        message: 'Failed to complete onboarding'
       };
     }
-
-    // Update user with onboarding data
-    const updatedUser: User = {
-      ...user,
-      industry: data.industryContext?.sector || 'enterprise',
-      competencyBaseline: data.competencyBaseline || user.competencyBaseline,
-      learningPath: data.recommendedPath || 'practice-first',
-      onboardingCompleted: true
-    };
-
-    this.updateUser(updatedUser);
-    localStorage.removeItem(this.STORAGE_KEYS.ONBOARDING);
-
-    return {
-      success: true,
-      user: updatedUser,
-      token: this.getToken()
-    };
   }
 
-  private getAllUsers(): User[] {
-    const usersStr = localStorage.getItem('shipspeak_all_users');
-    if (!usersStr) return [];
-    
+  private async getUserProfile(userId: string): Promise<User | null> {
     try {
-      return JSON.parse(usersStr);
-    } catch {
-      return [];
+      const { data, error } = await this.supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', userId)
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      // Map database fields to User type
+      const role = this.mapDbRoleToUserRole(data.current_role);
+      const isExecutive = ['Director', 'VP Product', 'CPO'].includes(role);
+
+      return {
+        id: data.id,
+        email: data.email,
+        name: data.full_name || data.email,
+        role,
+        industry: data.industry || 'enterprise',
+        isExecutive,
+        competencyBaseline: this.getDefaultCompetencyBaseline(role),
+        learningPath: 'practice-first', // TODO: Add to database schema
+        onboardingCompleted: data.current_role !== null, // User has completed onboarding if they have a role
+        createdAt: data.created_at,
+        lastLoginAt: new Date().toISOString()
+      };
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      return null;
     }
   }
 
-  private updateUser(user: User): void {
-    const users = this.getAllUsers();
-    const index = users.findIndex(u => u.id === user.id);
-    
-    if (index >= 0) {
-      users[index] = user;
-      localStorage.setItem('shipspeak_all_users', JSON.stringify(users));
+  private async createUserProfile(userId: string, credentials: SignupCredentials): Promise<User> {
+    try {
+      const isExecutive = ['Director', 'VP Product', 'CPO'].includes(credentials.role);
+      const dbRole = this.mapUserRoleToDbRole(credentials.role);
+
+      // Insert user profile into database
+      const { error } = await this.supabase
+        .from('profiles')
+        .insert({
+          id: userId,
+          email: credentials.email,
+          full_name: credentials.name,
+          current_role: dbRole,
+          industry: 'enterprise' // Default industry, will be set during onboarding
+        });
+
+      if (error) {
+        console.error('Error creating user profile:', error);
+        throw new Error('Failed to create user profile');
+      }
+
+      const user: User = {
+        id: userId,
+        email: credentials.email,
+        name: credentials.name,
+        role: credentials.role,
+        industry: 'enterprise',
+        isExecutive,
+        competencyBaseline: this.getDefaultCompetencyBaseline(credentials.role),
+        learningPath: 'practice-first',
+        onboardingCompleted: false, // New users need onboarding
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
+      };
+
+      return user;
+    } catch (error) {
+      console.error('Error in createUserProfile:', error);
+      // Return a fallback user if database insert fails
+      return {
+        id: userId,
+        email: credentials.email,
+        name: credentials.name,
+        role: credentials.role,
+        industry: 'enterprise',
+        isExecutive: ['Director', 'VP Product', 'CPO'].includes(credentials.role),
+        competencyBaseline: this.getDefaultCompetencyBaseline(credentials.role),
+        learningPath: 'practice-first',
+        onboardingCompleted: false,
+        createdAt: new Date().toISOString(),
+        lastLoginAt: new Date().toISOString()
+      };
     }
-    
-    localStorage.setItem(this.STORAGE_KEYS.USER, JSON.stringify(user));
+  }
+
+  private async updateUserProfile(user: User): Promise<void> {
+    try {
+      const dbRole = this.mapUserRoleToDbRole(user.role);
+      
+      const { error } = await this.supabase
+        .from('profiles')
+        .update({
+          full_name: user.name,
+          current_role: dbRole,
+          industry: user.industry
+        })
+        .eq('id', user.id);
+
+      if (error) {
+        console.error('Error updating user profile:', error);
+        throw new Error('Failed to update user profile');
+      }
+    } catch (error) {
+      console.error('Error in updateUserProfile:', error);
+      // Don't throw to avoid breaking the flow
+    }
+  }
+
+  async resetPassword(email: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const { error } = await this.supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`
+      });
+
+      if (error) {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Password reset email sent'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to send reset email'
+      };
+    }
+  }
+
+  async updatePassword(password: string): Promise<{ success: boolean; message?: string }> {
+    try {
+      const { error } = await this.supabase.auth.updateUser({
+        password
+      });
+
+      if (error) {
+        return {
+          success: false,
+          message: error.message
+        };
+      }
+
+      return {
+        success: true,
+        message: 'Password updated successfully'
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: 'Failed to update password'
+      };
+    }
   }
 }
 
